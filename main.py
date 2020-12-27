@@ -30,23 +30,28 @@ def vocabulary():
         search_type = words[0].strip()
         input_string = words[1].strip().split()
         if len(input_string) == 1:
-            response = get_dictionary_response(input_string[0])
-            if search_type == "meaning":
-                message.body(response["meaning"])
+            if search_type == "weather":
+                response = get_weather_response(input_string[0])
+                message.body("Weather of " + input_string[0] + " is: " + response)
                 responded = True
-            if search_type == "synonyms":
-                for synonym in response["synonyms"]:
-                    word_synonym += synonym + "\n"
-                message.body(word_synonym)
-                responded = True
-            if search_type == "antonyms":
-                for antonym in response["antonyms"]:
-                    word_antonym += antonym + "\n"
-                message.body(word_antonym)
-                responded = True
-            if search_type == "examples":
-                message.body(response["examples"])
-                responded = True
+            else:
+                response = get_dictionary_response(input_string[0])
+                if search_type == "meaning":
+                    message.body(response["meaning"])
+                    responded = True
+                if search_type == "synonyms":
+                    for synonym in response["synonyms"]:
+                        word_synonym += synonym + "\n"
+                    message.body(word_synonym)
+                    responded = True
+                if search_type == "antonyms":
+                    for antonym in response["antonyms"]:
+                        word_antonym += antonym + "\n"
+                    message.body(word_antonym)
+                    responded = True
+                if search_type == "examples":
+                    message.body(response["examples"])
+                    responded = True
     if not responded:
         message.body('Incorrect request format. Please enter help to see the correct format')
     return str(resp)
@@ -64,8 +69,31 @@ def create_help_message():
         "*synonyms* - type the word \n"\
         "*antonyms* - type the word \n\n"\
         "You can also get Current Weather data!\n"\
-        "Just type: *weather* - name of the city\n"
+        "Just type: \n*weather* - name of the city\n"
     return help_message
+
+def get_weather_response(city):
+    """
+    Query OpenWeatherMap API
+    :param city: query's city
+    :return: description
+    """
+    description = "Sorry, response not available for the city."
+    api_key = os.getenv("KEY_WEATHER")
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}"
+    print(url)
+    response = requests.get(url)
+    api_response = json.loads(response.text)
+    print(api_response["name"])
+    if response.status_code == 200:
+        print("haha")
+        if api_response["name"].lower() == city:
+            try:
+                if len(api_response["weather"][0]["description"]) != 0:
+                    description = api_response["weather"][0]["description"]
+            except KeyError as e:
+                print(e)
+    return description
 
 
 def get_dictionary_response(word):
@@ -75,10 +103,10 @@ def get_dictionary_response(word):
     :return: definitions, examples, antonyms, synonyms
     """
     word_metadata = {}
-    definition = "sorry, no definition is available."
-    example = "sorry, no examples are available."
-    synonyms = ["sorry, no synonyms are available."]
-    antonyms = ["sorry, no antonyms are available."]
+    definition = "Sorry, no definition is available."
+    example = "Sorry, no examples are available."
+    synonyms = ["Sorry, no synonyms are available."]
+    antonyms = ["Sorry, no antonyms are available."]
     api_key = os.getenv("KEY_THESAURUS")
     url = f"https://www.dictionaryapi.com/api/v3/references/thesaurus/json/{word}?key={api_key}"
     response = requests.get(url)
